@@ -1,0 +1,15 @@
+%% MediConnect - Data Flow Diagram (DFD) Level 0
+%% Context Diagram
+
+flowchart LR
+    classDef entityClass fill:#FFFFFF,stroke:#000000,stroke-width:2px;
+    classDef processClass fill:#FFFFFF,stroke:#000000,stroke-width:2px,rx:30,ry:30;
+
+    ASHA["ASHA Worker\n(External Entity)"]:::entityClass
+    SYS(["0. MediConnect System"]):::processClass
+
+    %% Inputs from ASHA Worker to MediConnect
+    ASHA -->|"1. Patient Details\n2. Maternal Health Data (6 features)\n3. Child & Immunization Data\n4. Symptom Case Reports\n5. User / Auth Requests\n6. Synchronization Push Request"| SYS
+
+    %% Outputs from MediConnect to ASHA Worker
+    SYS -->|"1. Health Records & Visit Histories\n2. Maternal Risk Prediction & Guidance\n3. Immunization Follow-up List\n4. Disease Early Warning Alerts\n5. Surveillance Summaries\n6. Sync Status & Audit Receipt"| ASHA

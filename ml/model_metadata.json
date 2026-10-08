@@ -1,0 +1,159 @@
+{
+  "model_version": "v1.0.0",
+  "algorithm": "RandomForestClassifier",
+  "dataset_name": "Maternal Health Risk Data Set.csv",
+  "total_records": 1014,
+  "train_records": 811,
+  "test_records": 203,
+  "train_test_split": "80/20 Stratified",
+  "random_state": 42,
+  "features": [
+    "Age",
+    "SystolicBP",
+    "DiastolicBP",
+    "BS",
+    "BodyTemp",
+    "HeartRate"
+  ],
+  "target": "RiskLevel",
+  "classes": [
+    "Low Risk",
+    "Medium Risk",
+    "High Risk"
+  ],
+  "class_distribution": {
+    "Low Risk": 406,
+    "Medium Risk": 336,
+    "High Risk": 272
+  },
+  "primary_metric": "High-Risk Recall",
+  "training_metrics": {
+    "high_risk_recall": 0.9401,
+    "recall_macro": 0.8685,
+    "precision_macro": 0.8694,
+    "f1_macro": 0.8682,
+    "accuracy": 0.8656
+  },
+  "evaluation_metrics": {
+    "primary_metric": "High-Risk Recall",
+    "high_risk_recall": 0.9273,
+    "high_risk_precision": 0.9623,
+    "high_risk_f1": 0.9444,
+    "recall_macro": 0.8013,
+    "recall_weighted": 0.7931,
+    "precision_macro": 0.8076,
+    "precision_weighted": 0.7947,
+    "f1_macro": 0.8042,
+    "f1_weighted": 0.7936,
+    "accuracy": 0.7931,
+    "per_class": {
+      "Low Risk": {
+        "recall": 0.7901,
+        "precision": 0.7529,
+        "f1": 0.7711
+      },
+      "Medium Risk": {
+        "recall": 0.6866,
+        "precision": 0.7077,
+        "f1": 0.697
+      },
+      "High Risk": {
+        "recall": 0.9273,
+        "precision": 0.9623,
+        "f1": 0.9444
+      }
+    }
+  },
+  "confusion_matrix": {
+    "labels": [
+      "Low Risk",
+      "Medium Risk",
+      "High Risk"
+    ],
+    "matrix": [
+      [
+        64,
+        17,
+        0
+      ],
+      [
+        19,
+        46,
+        2
+      ],
+      [
+        2,
+        2,
+        51
+      ]
+    ]
+  },
+  "classification_report": {
+    "Low Risk": {
+      "precision": 0.7529411764705882,
+      "recall": 0.7901234567901234,
+      "f1-score": 0.7710843373493976,
+      "support": 81.0
+    },
+    "Medium Risk": {
+      "precision": 0.7076923076923077,
+      "recall": 0.6865671641791045,
+      "f1-score": 0.696969696969697,
+      "support": 67.0
+    },
+    "High Risk": {
+      "precision": 0.9622641509433962,
+      "recall": 0.9272727272727272,
+      "f1-score": 0.9444444444444444,
+      "support": 55.0
+    },
+    "accuracy": 0.7931034482758621,
+    "macro avg": {
+      "precision": 0.8076325450354308,
+      "recall": 0.8013211160806518,
+      "f1-score": 0.8041661595878464,
+      "support": 203.0
+    },
+    "weighted avg": {
+      "precision": 0.7947199419280249,
+      "recall": 0.7931034482758621,
+      "f1-score": 0.7935923422005682,
+      "support": 203.0
+    }
+  },
+  "candidate_models_cv": {
+    "GradientBoostingClassifier": {
+      "cv_high_risk_recall": 0.8429175475687105,
+      "cv_macro_recall": 0.804084200351569,
+      "cv_macro_f1": 0.8067879553864422,
+      "cv_macro_precision": 0.8158831584465253,
+      "cv_accuracy": 0.8027266530334014
+    },
+    "RandomForestClassifier": {
+      "cv_high_risk_recall": 0.8568710359408035,
+      "cv_macro_recall": 0.7946906750095283,
+      "cv_macro_f1": 0.7966777957407364,
+      "cv_macro_precision": 0.8034482757034936,
+      "cv_accuracy": 0.7928728319321366
+    },
+    "LogisticRegression": {
+      "cv_high_risk_recall": 0.7465116279069768,
+      "cv_macro_recall": 0.6106731139055258,
+      "cv_macro_f1": 0.6066117589896474,
+      "cv_macro_precision": 0.6072010471342275,
+      "cv_accuracy": 0.6054230099219875
+    }
+  },
+  "feature_importances": {
+    "Age": 0.12711176769988072,
+    "SystolicBP": 0.2372876283170881,
+    "DiastolicBP": 0.117690263387725,
+    "BS": 0.3611957020801057,
+    "BodyTemp": 0.07493159369538471,
+    "HeartRate": 0.08178304481981583
+  },
+  "scikit_learn_version": "1.9.0",
+  "trained_at": "2026-09-30T23:03:54.748678",
+  "explanation": "High-Risk Recall is used as the primary evaluation metric to prioritize detection of high-risk cases. The model achieved 92.73% recall for the High Risk class on the held-out test set.",
+  "disclaimer": "Decision-support prediction only. This is not a medical diagnosis."
+}

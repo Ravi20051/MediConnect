@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediConnect — ASHA Field Companion</title>
+  <meta name="description" content="A Predictive EHR Companion for ASHA Workers in Low-Internet Rural Areas">
+  <meta name="theme-color" content="#064E3B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+  <link rel="stylesheet" href="/static/css/styles.css?v=2.1.0">
+</head>
+<body>
+
+  <!-- Top App Header -->
+  <header class="top-header">
+    <div class="header-container">
+      <div class="brand-wrapper">
+        <div class="brand-icon">MC</div>
+        <div class="brand-titles">
+          <h1>MediConnect</h1>
+          <div class="subtitle">A Predictive EHR Companion for ASHA Workers in Low-Internet Rural Areas</div>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <!-- Network Connectivity Status Indicator & Simulation Toggle -->
+        <div id="networkPill" class="network-pill online" title="Click to toggle offline mode simulation for testing">
+          <span class="pill-dot"></span>
+          <span id="networkText">Online</span>
+        </div>
+
+        <button id="toggleNetworkBtn" class="btn btn-outline btn-sm" style="color:white; border-color:rgba(255,255,255,0.4);" title="Simulate field disconnect">
+          Simulate Offline
+        </button>
+
+        <!-- Language Selection Dropdown (Strictly Single Language) -->
+        <div class="lang-selector-box" style="display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.18); padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.3);">
+          <span style="font-size:15px;">🌐</span>
+          <select id="langSelector" style="background:#FFFFFF; color:var(--text-main); font-weight:700; font-size:13px; padding:4px 8px; border-radius:4px; border:none; outline:none; cursor:pointer;" title="Change Language">
+            <option value="en" selected>English</option>
+            <option value="hi">हिंदी (Hindi)</option>
+          </select>
+        </div>
+
+        <!-- Current ASHA Worker Badge -->
+        <div class="user-badge" id="userBadge">
+          <span>👩‍⚕️ <strong id="headerUserName">Sunita Devi</strong></span>
+          <span class="user-village" id="headerUserVillage">Rampur</span>
+        </div>
+
+        <button id="cleanRecordsBtn" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:white;" onclick="app.confirmCleanAllRecords()" title="Clean all records and start fresh">🧹 Fresh Start</button>
+        <button id="logoutBtn" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:white;">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="nav-bar" id="mainNavBar">
+    <div class="nav-container">
+      <button class="nav-tab active" data-view="dashboard">
+        📊 <span>Dashboard</span>
+      </button>
+      <button class="nav-tab" data-view="mothers">
+        🤰 <span>Mothers</span>
+      </button>
+      <button class="nav-tab" data-view="maternal-predict">
+        🩺 <span>Maternal Risk</span>
+      </button>
+      <button class="nav-tab" data-view="children">
+        👶 <span>Children</span>
+      </button>
+      <button class="nav-tab" data-view="immunization-followup">
+        💉 <span>Vaccine Follow-up</span>
+        <span class="tab-badge" id="navOverdueBadge">0</span>
+      </button>
+      <button class="nav-tab" data-view="outbreak-alerts">
+        🚨 <span>Outbreak Alerts</span>
+        <span class="tab-badge danger" id="navAlertBadge">0</span>
+      </button>
+      <button class="nav-tab" data-view="symptom-entry">
+        📝 <span>Record Symptom</span>
+      </button>
+      <button class="nav-tab" data-view="sync-center">
+        🔄 <span>Sync Center</span>
+        <span class="tab-badge" id="navSyncBadge" style="background:#555;">0</span>
+      </button>
+      <button class="nav-tab" data-view="reports">
+        📈 <span>Reports & Coverage</span>
+      </button>
+      <button class="nav-tab" data-view="model-status">
+        ⚙️ <span>Model Metrics</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main View Container -->
+  <main class="main-content">
+
+    <!-- 1. LOGIN VIEW -->
+    <section id="view-login" class="view-panel">
+      <div style="max-width:440px; margin: 40px auto;">
+        <div class="card" style="box-shadow: var(--shadow-lg); border-top: 4px solid var(--primary);">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="display:inline-block; background:var(--primary-light); color:var(--primary); padding:12px; border-radius:50%; font-size:32px; margin-bottom:10px;">🏥</div>
+            <h2 style="font-size:22px;" id="loginTitleText">ASHA Worker Login</h2>
+            <p style="font-size:13px; color:var(--text-muted);" id="loginSubText">Health Worker Field Authentication</p>
+          </div>
+          
+          <form id="loginForm">
+            <div class="form-group" style="margin-bottom:14px;">
+              <label for="loginUsername" id="lblLoginUser">Username</label>
+              <input type="text" id="loginUsername" class="form-control" value="asha_sunita" required autocomplete="username">
+            </div>
+            <div class="form-group" style="margin-bottom:20px;">
+              <label for="loginPassword" id="lblLoginPwd">Password</label>
+              <input type="password" id="loginPassword" class="form-control" value="asha123" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; font-size:16px;" id="btnSubmitLogin">
+              Login to Field App
+            </button>
+          </form>
+
+          <div style="margin-top:20px; font-size:12px; background:var(--bg-page); padding:10px; border-radius:var(--radius-sm);">
+            <strong>Demo Accounts available:</strong><br>
+            • <code>asha_sunita</code> / <code>asha123</code> (Rampur Village)<br>
+            • <code>asha_anita</code> / <code>asha123</code> (Bhimpur Village)<br>
+            • <code>admin_meena</code> / <code>admin123</code> (ANM Supervisor)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. DASHBOARD VIEW -->
+    <section id="view-dashboard" class="view-panel active">
+      <!-- Field Action Banner -->
+      <div class="action-banner">
+        <h2><span id="dashGreetingText">Welcome</span>, <span id="dashAshaName">Sunita Devi</span></h2>
+        <p>Field Health Companion for Sub-Center: <strong id="dashSubCenter">Rampur</strong>. Offline-capable data entry and local access in remote field areas.</p>
+        
+        <div class="quick-btn-grid">
+          <button class="quick-btn" id="btnQuickAddMother" onclick="app.showView('add-mother')">
+            <span>➕ 🤰 Add Mother</span>
+          </button>
+          <button class="quick-btn" id="btnQuickCheckRisk" onclick="app.showView('maternal-predict')">
+            <span>🩺 Check Risk</span>
+          </button>
+          <button class="quick-btn" id="btnQuickAddChild" onclick="app.showView('add-child')">
+            <span>➕ 👶 Add Child</span>
+          </button>
+          <button class="quick-btn" id="btnQuickFollowup" onclick="app.showView('immunization-followup')">
+            <span>💉 Vaccine Follow-up</span>
+          </button>
+          <button class="quick-btn" id="btnQuickRecordSym" onclick="app.showView('symptom-entry')">
+            <span>📝 Record Symptom</span>
+          </button>
+          <button class="quick-btn" id="btnQuickAlerts" onclick="app.showView('outbreak-alerts')">
+            <span>🚨 Outbreak Alerts</span>
+          </button>
+          <button class="quick-btn" id="btnQuickSync" onclick="app.triggerSync()">
+            <span>🔄 Sync Now</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live KPIs from SQL Database -->
+      <div class="kpi-grid">
+        <div class="kpi-card" onclick="app.showView('mothers')" style="cursor:pointer;">
+          <div class="kpi-label"><span id="lblKpiMothers">Registered Mothers</span> <span>🤰</span></div>
+          <div class="kpi-val" id="kpiTotalMothers">0</div>
+          <div class="kpi-sub" id="subKpiMothers">Total enrolled pregnant women</div>
+        </div>
+
+        <div class="kpi-card danger" onclick="app.showView('mothers', {filterHighRisk: true})" style="cursor:pointer;">
+          <div class="kpi-label"><span id="lblKpiHighRisk">High-Risk Cases</span> <span>⚠️</span></div>
+          <div class="kpi-val" id="kpiHighRiskMothers" style="color:var(--risk-high);">0</div>
+          <div class="kpi-sub" id="subKpiHighRisk">Immediate referral required</div>
+        </div>
+
+        <div class="kpi-card" onclick="app.showView('children')" style="cursor:pointer;">
+          <div class="kpi-label"><span id="lblKpiChildren">Children Tracked</span> <span>👶</span></div>
+          <div class="kpi-val" id="kpiTotalChildren">0</div>
+          <div class="kpi-sub" id="subKpiChildren">Immunization surveillance active</div>
+        </div>
+
+        <div class="kpi-card warning" onclick="app.showView('immunization-followup')" style="cursor:pointer;">
+          <div class="kpi-label"><span id="lblKpiVaccines">Vaccines Due / Overdue</span> <span>💉</span></div>
+          <div class="kpi-val" id="kpiPendingVaccines" style="color:var(--risk-med);">0</div>
+          <div class="kpi-sub" id="subKpiVaccines">Actionable follow-up required</div>
+        </div>
+
+        <div class="kpi-card danger" onclick="app.showView('outbreak-alerts')" style="cursor:pointer;">
+          <div class="kpi-label"><span id="lblKpiAlerts">Outbreak Alerts</span> <span>🚨</span></div>
+          <div class="kpi-val" id="kpiOutbreakAlerts" style="color:var(--risk-high);">0</div>
+          <div class="kpi-sub" id="subKpiAlerts">Unusual symptom clusters detected</div>
+        </div>
+
+        <div class="kpi-card terracotta" onclick="app.showView('sync-center')" style="cursor:pointer;">
+          <div class="kpi-label"><span id="lblKpiSync">Sync Status</span> <span>🔄</span></div>
+          <div class="kpi-val" style="font-size:18px; margin-top:6px;" id="kpiSyncStatus">Ready</div>
+          <div class="kpi-sub" id="kpiLastSync">Last: Just now</div>
+        </div>
+      </div>
+
+      <!-- Actionable Urgent Alerts Strip -->
+      <div id="dashAlertBannerContainer"></div>
+
+      <!-- Two-Column Overview -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:20px;">
+        <!-- High-Priority Maternal Cases -->
+        <div class="card">
+          <div class="card-header">
+            <h3 id="hdrHighRiskCases">⚠️ High-Risk Mothers Priority List</h3>
+            <button class="btn btn-outline btn-sm" onclick="app.showView('mothers')">View All</button>
+          </div>
+          <div id="dashHighRiskList" class="table-responsive">
+            <!-- Dynamic rows -->
+          </div>
+        </div>
+
+        <!-- Weekly Vaccination Due List -->
+        <div class="card">
+          <div class="card-header">
+            <h3>💉 Actionable Immunization Follow-Up</h3>
+            <button class="btn btn-outline btn-sm" onclick="app.showView('immunization-followup')">Open List</button>
+          </div>
+          <div id="dashImmunizationList" class="table-responsive">
+            <!-- Dynamic rows -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. MOTHER / PATIENT RECORDS VIEW -->
+    <section id="view-mothers" class="view-panel">
+      <div class="card">
+        <div class="card-header">
+          <h3>🤰 Maternal Health Records</h3>
+          <div class="actions">
+            <button class="btn btn-primary" onclick="app.showView('add-mother')">➕ Add New Mother</button>
+          </div>
+        </div>
+
+        <!-- Filters & Search -->
+        <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+          <input type="text" id="motherSearchInput" class="form-control" placeholder="Search name, phone, or RCH ID..." style="flex:1; min-width:200px;">
+          <select id="motherVillageFilter" class="form-control" style="width:180px;">
+            <option value="">All Villages</option>
+            <option value="Rampur">Rampur</option>
+            <option value="Bhimpur">Bhimpur</option>
+          </select>
+          <label style="display:flex; align-items:center; gap:8px; font-weight:600; cursor:pointer;">
+            <input type="checkbox" id="motherHighRiskFilter" style="width:18px; height:18px;">
+            Show High-Risk Only
+          </label>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>RCH / ID</th>
+                <th>Mother's Name</th>
+                <th>Age</th>
+                <th>Village</th>
+                <th>Phone</th>
+                <th>EDD</th>
+                <th>Latest Risk Level</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="mothersTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ADD / EDIT MOTHER VIEW -->
+    <section id="view-add-mother" class="view-panel">
+      <div class="card" style="max-width:800px; margin:0 auto;">
+        <div class="card-header">
+          <h3>➕ Register Pregnant Mother</h3>
+          <button class="btn btn-outline btn-sm" onclick="app.showView('mothers')">Back to List</button>
+        </div>
+
+        <form id="addMotherForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="mFullName">Mother's Full Name *</label>
+              <input type="text" id="mFullName" class="form-control" required placeholder="e.g. Suman Devi">
+            </div>
+
+            <div class="form-group">
+              <label for="mAge">Age in Years *</label>
+              <input type="number" id="mAge" class="form-control" required min="14" max="55" placeholder="e.g. 24">
+            </div>
+
+            <div class="form-group">
+              <label for="mHusbandName">Husband's Name</label>
+              <input type="text" id="mHusbandName" class="form-control" placeholder="e.g. Ramesh Kumar">
+            </div>
+
+            <div class="form-group">
+              <label for="mVillage">Village *</label>
+              <select id="mVillage" class="form-control" required>
+                <option value="Rampur">Rampur</option>
+                <option value="Bhimpur">Bhimpur</option>
+                <option value="Chandpur">Chandpur</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="mPhone">Mobile Phone</label>
+              <input type="tel" id="mPhone" class="form-control" pattern="[0-9]{10}" placeholder="10-digit mobile number">
+            </div>
+
+            <div class="form-group">
+              <label for="mRchId">RCH / MCTS ID</label>
+              <input type="text" id="mRchId" class="form-control" placeholder="e.g. RCH-UP-2026-101">
+            </div>
+
+            <div class="form-group">
+              <label for="mLmpDate">Last Menstrual Period (LMP) Date</label>
+              <input type="date" id="mLmpDate" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label for="mGravida">Gravida / Total Pregnancies</label>
+              <input type="number" id="mGravida" class="form-control" min="1" max="10" value="1">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:16px;">
+            <label for="mNotes">Field Notes / Clinical History</label>
+            <textarea id="mNotes" class="form-control" rows="2" placeholder="Any previous complications, anemia, etc."></textarea>
+          </div>
+
+          <div style="margin-top:20px; display:flex; gap:12px;">
+            <button type="submit" class="btn btn-primary" style="flex:1;">Save Mother Record</button>
+            <button type="button" class="btn btn-outline" onclick="app.showView('mothers')">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 5. MATERNAL RISK PREDICTION (ML MODULE) -->
+    <section id="view-maternal-predict" class="view-panel">
+      <div class="card" style="max-width:880px; margin:0 auto;">
+        <div class="card-header">
+          <div>
+            <h3>🩺 Maternal Health Risk Prediction</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+              Trained on genuine clinical data using the exact 6 features.
+            </p>
+          </div>
+          <span class="badge badge-low-risk" style="font-size:13px;">GradientBoosting v1.0.0</span>
+        </div>
+
+        <form id="maternalPredictForm">
+          <div class="form-group" style="margin-bottom:16px;">
+            <label for="predPatientSelect">Select Registered Mother (Optional):</label>
+            <select id="predPatientSelect" class="form-control">
+              <option value="">-- Quick Check (No record saved) --</option>
+            </select>
+          </div>
+
+          <div style="background:var(--bg-page); padding:16px; border-radius:var(--radius-md); margin-bottom:16px; border:1px solid var(--border-subtle);">
+            <div style="font-weight:700; margin-bottom:12px; font-size:14px; color:var(--primary-dark);">
+              Enter 6 Clinical Health Indicators:
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="predAge">1. Age in Years * <span class="hint">[10-70 yrs]</span></label>
+                <input type="number" id="predAge" class="form-control" required min="10" max="70" value="26">
+              </div>
+
+              <div class="form-group">
+                <label for="predSystolicBP">2. Systolic BP * <span class="hint">[70-160 mmHg]</span></label>
+                <input type="number" id="predSystolicBP" class="form-control" required min="70" max="180" value="120">
+              </div>
+
+              <div class="form-group">
+                <label for="predDiastolicBP">3. Diastolic BP * <span class="hint">[49-100 mmHg]</span></label>
+                <input type="number" id="predDiastolicBP" class="form-control" required min="40" max="120" value="80">
+              </div>
+
+              <div class="form-group">
+                <label for="predBS">4. Blood Sugar / BS * <span class="hint">[6.0-19.0 mmol/L]</span></label>
+                <input type="number" step="0.1" id="predBS" class="form-control" required min="5.0" max="25.0" value="7.5">
+              </div>
+
+              <div class="form-group">
+                <label for="predBodyTemp">5. Body Temperature * <span class="hint">[98.0-103.0 °F]</span></label>
+                <input type="number" step="0.1" id="predBodyTemp" class="form-control" required min="96.0" max="106.0" value="98.0">
+              </div>
+
+              <div class="form-group">
+                <label for="predHeartRate">6. Heart Rate * <span class="hint">[60-120 BPM]</span></label>
+                <input type="number" id="predHeartRate" class="form-control" required min="40" max="160" value="76">
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; margin-bottom:20px;">
+            <button type="submit" class="btn btn-primary" id="btnSubmitPredict" style="flex:1; font-size:16px;">
+              Predict Risk Level
+            </button>
+            <button type="button" class="btn btn-outline" onclick="app.populateSampleRisk('high')">
+              Demo High Risk
+            </button>
+            <button type="button" class="btn btn-outline" onclick="app.populateSampleRisk('low')">
+              Demo Low Risk
+            </button>
+          </div>
+        </form>
+
+        <!-- Prediction Result Display Box -->
+        <div id="predictionResultCard" style="display:none; margin-top:20px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. CHILD RECORDS VIEW -->
+    <section id="view-children" class="view-panel">
+      <div class="card">
+        <div class="card-header">
+          <h3>👶 Child Health & Immunization Records</h3>
+          <div class="actions">
+            <button class="btn btn-primary" onclick="app.showView('add-child')">➕ Register New Child</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Child ID</th>
+                <th>Child Name</th>
+                <th>Mother / Guardian</th>
+                <th>Gender</th>
+                <th>Date of Birth</th>
+                <th>Age</th>
+                <th>Village</th>
+                <th>Vaccination Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="childrenTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. ADD CHILD VIEW -->
+    <section id="view-add-child" class="view-panel">
+      <div class="card" style="max-width:700px; margin:0 auto;">
+        <div class="card-header">
+          <h3>➕ Register Child for Universal Immunization</h3>
+          <button class="btn btn-outline btn-sm" onclick="app.showView('children')">Back to List</button>
+        </div>
+
+        <form id="addChildForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="chMotherId">Select Registered Mother</label>
+              <select id="chMotherId" class="form-control">
+                <option value="">-- No linked mother registered --</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="chName">Child's Name *</label>
+              <input type="text" id="chName" class="form-control" required placeholder="e.g. Aarav">
+            </div>
+
+            <div class="form-group">
+              <label for="chGender">Gender *</label>
+              <select id="chGender" class="form-control" required>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="chDob">Date of Birth *</label>
+              <input type="date" id="chDob" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label for="chWeight">Birth Weight (kg)</label>
+              <input type="number" step="0.1" id="chWeight" class="form-control" min="1.0" max="6.0" placeholder="e.g. 2.8">
+            </div>
+
+            <div class="form-group">
+              <label for="chVillage">Village *</label>
+              <select id="chVillage" class="form-control" required>
+                <option value="Rampur">Rampur</option>
+                <option value="Bhimpur">Bhimpur</option>
+                <option value="Chandpur">Chandpur</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
+            <button type="submit" class="btn btn-primary" style="flex:1; min-width:240px;">Register Child & Generate UIP Schedule</button>
+            <button type="button" class="btn btn-outline" id="btnPreviewSchedule" onclick="app.previewUIPScheduleFromForm()">📅 View UIP Schedule Preview</button>
+            <button type="button" class="btn btn-outline" onclick="app.showView('children')">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 8. IMMUNIZATION FOLLOW-UP VIEW -->
+    <section id="view-immunization-followup" class="view-panel">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>💉 Weekly Actionable Immunization Follow-Up</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+              Rule-based UIP schedule engine comparing child age with due dates. Real field follow-up tracking.
+            </p>
+          </div>
+          <span class="badge" style="background:var(--bg-page); color:var(--text-main); border:1px solid var(--border-strong);">
+            Rule-Based Engine (UIP)
+          </span>
+        </div>
+
+        <!-- Urgency Alert Notice -->
+        <div class="alert-box info">
+          <h4>📋 ASHA Weekly Field Action</h4>
+          <p>
+            Visit families with <strong>High Priority / Overdue</strong> status before the upcoming Village Health Nutrition Day (VHSND).
+            Counsel parents on routine immunization to prevent dropout.
+          </p>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Urgency Status</th>
+                <th>Child Name</th>
+                <th>Mother / Guardian</th>
+                <th>Age</th>
+                <th>Village</th>
+                <th>Phone</th>
+                <th>Vaccine Due</th>
+                <th>Due Date</th>
+                <th>Action Recommended</th>
+                <th>Record Dose</th>
+              </tr>
+            </thead>
+            <tbody id="followupTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. SYMPTOM ENTRY VIEW -->
+    <section id="view-symptom-entry" class="view-panel">
+      <div class="card" style="max-width:760px; margin:0 auto;">
+        <div class="card-header">
+          <div>
+            <h3>📝 Village Symptom Surveillance Logger</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+              Logs community symptoms for statistical anomaly detection and outbreak early warning.
+            </p>
+          </div>
+        </div>
+
+        <form id="symptomForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="symVillage">Village *</label>
+              <select id="symVillage" class="form-control" required>
+                <option value="Rampur">Rampur</option>
+                <option value="Bhimpur">Bhimpur</option>
+                <option value="Chandpur">Chandpur</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="symPersonName">Patient / Person Name *</label>
+              <input type="text" id="symPersonName" class="form-control" required placeholder="e.g. Ramesh / Child of Pooja">
+            </div>
+
+            <div class="form-group">
+              <label for="symAge">Age in Years</label>
+              <input type="number" id="symAge" class="form-control" min="0" max="100" placeholder="e.g. 8">
+            </div>
+
+            <div class="form-group">
+              <label for="symGender">Gender</label>
+              <select id="symGender" class="form-control">
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="symType">Symptom Type *</label>
+              <select id="symType" class="form-control" required>
+                <option value="Diarrhea/Vomiting">Diarrhea / Vomiting</option>
+                <option value="Fever">High Fever</option>
+                <option value="Acute Respiratory/Cough">Acute Cough / Breathlessness</option>
+                <option value="Skin Rash/Measles">Skin Rash / Red Spots</option>
+                <option value="Jaundice">Jaundice / Yellow Eyes</option>
+                <option value="Other">Other Unusual Symptom</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="symSeverity">Severity *</label>
+              <select id="symSeverity" class="form-control" required>
+                <option value="Mild">Mild</option>
+                <option value="Moderate" selected>Moderate</option>
+                <option value="Severe">Severe</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="symOnsetDate">Onset Date *</label>
+              <input type="date" id="symOnsetDate" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:14px;">
+            <label for="symNotes">Surveillance Notes</label>
+            <textarea id="symNotes" class="form-control" rows="2" placeholder="e.g. Water well near handpump contaminated, cluster of 3 children in same area"></textarea>
+          </div>
+
+          <div style="margin-top:20px; display:flex; gap:12px;">
+            <button type="submit" class="btn btn-primary" style="flex:1;">Log Symptom Case</button>
+            <button type="button" class="btn btn-outline" onclick="app.showView('outbreak-alerts')">View Early Warnings</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 10. DISEASE EARLY WARNING / ALERTS VIEW -->
+    <section id="view-outbreak-alerts" class="view-panel">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>🚨 Village-Level Disease Outbreak Early Warning</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+              Statistical anomaly detection comparing 7-day rolling symptom clusters against historical 30-day baseline.
+            </p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="app.showView('symptom-entry')">➕ Log New Symptom Case</button>
+        </div>
+
+        <!-- Active Alerts Container -->
+        <div id="outbreakAlertsContainer">
+          <!-- Populated via JS -->
+        </div>
+
+        <!-- Monitored Villages Table -->
+        <h4 style="font-size:16px; margin: 24px 0 12px; font-weight:700;">Village Surveillance Status</h4>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Village</th>
+                <th>Symptom Monitored</th>
+                <th>Last 7 Days Cases</th>
+                <th>Severe Cases</th>
+                <th>7-Day Baseline Rate</th>
+                <th>Status</th>
+                <th>Surveillance Advisory</th>
+              </tr>
+            </thead>
+            <tbody id="outbreakVillagesTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Recent Field Logs -->
+        <h4 style="font-size:16px; margin: 24px 0 12px; font-weight:700;">Recent Field Symptom Logs</h4>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Village</th>
+                <th>Patient</th>
+                <th>Age / Gender</th>
+                <th>Symptom</th>
+                <th>Severity</th>
+              </tr>
+            </thead>
+            <tbody id="recentSymptomsTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11. OFFLINE RECORDS & 12. SYNC CENTER VIEW -->
+    <section id="view-sync-center" class="view-panel">
+      <div class="card" style="max-width:880px; margin:0 auto;">
+        <div class="card-header">
+          <div>
+            <h3>🔄 Offline Storage & Synchronization Gateway</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+              Designed for intermittent rural connectivity. Records saved while offline are cached securely on this device and synced when connected.
+            </p>
+          </div>
+          <button id="syncNowBtn" class="btn btn-primary" onclick="app.triggerSync()">
+            Sync Now
+          </button>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
+          <div style="background:var(--bg-page); padding:16px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+            <div style="font-size:13px; color:var(--text-muted); font-weight:600;">Pending Offline Records</div>
+            <div style="font-size:28px; font-weight:800; color:var(--terracotta);" id="syncPendingCount">0</div>
+            <div style="font-size:12px; color:var(--text-muted);">Unsynchronized local entries</div>
+          </div>
+
+          <div style="background:var(--bg-page); padding:16px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+            <div style="font-size:13px; color:var(--text-muted); font-weight:600;">Last Successful Sync</div>
+            <div style="font-size:15px; font-weight:700; margin-top:6px;" id="syncLastTime">Never</div>
+            <div style="font-size:12px; color:var(--text-muted);">Verified server sync timestamp</div>
+          </div>
+
+          <div style="background:var(--bg-page); padding:16px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+            <div style="font-size:13px; color:var(--text-muted); font-weight:600;">Device Network State</div>
+            <div style="font-size:15px; font-weight:700; margin-top:6px;" id="syncNetworkState">Online</div>
+            <div style="font-size:12px; color:var(--text-muted);">Auto-detects field reconnect</div>
+          </div>
+        </div>
+
+        <h4 style="font-size:15px; font-weight:700; margin-bottom:12px;">Local Offline Queue</h4>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Record Type</th>
+                <th>Identifier</th>
+                <th>Summary</th>
+                <th>Time Created</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="offlineQueueTableBody">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Fresh Start / Database Reset Box -->
+        <div style="margin-top:24px; padding:18px; border:1px solid var(--border-subtle); border-radius:var(--radius-md); background:#fff;">
+          <h4 style="font-size:15px; font-weight:700; margin-bottom:6px; color:var(--text-main);">🧹 Fresh Start / Clean All Records</h4>
+          <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+            Clean all patient, maternal visit, child, immunization, and symptom records to start with a completely fresh database. Login user accounts (ASHA workers and supervisors) remain intact.
+          </p>
+          <button type="button" class="btn btn-outline" style="color:var(--risk-high); border-color:var(--risk-high-border); font-weight:700;" onclick="app.confirmCleanAllRecords()">
+            🗑️ Clean All Records & Start Fresh
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13. MODEL STATUS & RETRAINING VIEW -->
+    <section id="view-model-status" class="view-panel">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>⚙️ Machine Learning Model Status & Evaluation</h3>
+            <p style="font-size:14px; font-weight:700; color:var(--primary); margin-top:3px;">
+              MediConnect prioritizes recall for high-risk case detection.
+            </p>
+            <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+              Trained and verified on <code>Maternal Health Risk Data Set.csv</code> (1,014 records, 80/20 Stratified Split).
+            </p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="app.retrainModel()">🔄 Re-verify Model</button>
+        </div>
+
+        <!-- Primary and Secondary Metrics Grid -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:20px;">
+          <div class="kpi-card danger" style="border:2px solid var(--risk-high-border); background:var(--risk-high-bg);">
+            <div class="kpi-label" style="color:var(--risk-high); font-weight:800;">PRIMARY METRIC</div>
+            <div class="kpi-val" id="modHighRecall" style="color:var(--risk-high); font-size:32px;">92.7%</div>
+            <div class="kpi-sub" style="font-weight:700;">High-Risk Recall</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Macro Recall</div>
+            <div class="kpi-val" id="modMacroRecall">80.1%</div>
+            <div class="kpi-sub">Across all classes</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Macro Precision</div>
+            <div class="kpi-val" id="modMacroPrecision">80.8%</div>
+            <div class="kpi-sub">Secondary metric</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Macro F1-Score</div>
+            <div class="kpi-val" id="modMacroF1">80.4%</div>
+            <div class="kpi-sub">Secondary metric</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Accuracy</div>
+            <div class="kpi-val" id="modAccuracy">79.3%</div>
+            <div class="kpi-sub">Held-out test set</div>
+          </div>
+        </div>
+
+        <div class="alert-box info" style="margin-bottom:20px;">
+          <p style="font-size:13.5px; margin:0;" id="modExplanationText">
+            <strong>High-Risk Recall Evaluation:</strong> High-Risk Recall is used as the primary evaluation metric to prioritize detection of high-risk cases. The model achieved <strong>92.73% recall</strong> for the High Risk class, correctly identifying 51 of 55 actual High Risk cases in the held-out test set.
+          </p>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:20px;">
+          <div>
+            <h4 style="font-size:15px; font-weight:700; margin-bottom:10px;">Per-Class Evaluation Metrics</h4>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Class</th>
+                    <th>Recall</th>
+                    <th>Precision</th>
+                    <th>F1-Score</th>
+                  </tr>
+                </thead>
+                <tbody id="modClassMetricsBody">
+                  <!-- JS populated -->
+                </tbody>
+              </table>
+            </div>
+
+            <h4 style="font-size:15px; font-weight:700; margin: 20px 0 10px;">Feature Importances</h4>
+            <div id="modFeatureImpContainer" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- JS populated -->
+            </div>
+          </div>
+
+          <div>
+            <h4 style="font-size:15px; font-weight:700; margin-bottom:10px;">Confusion Matrix</h4>
+            <div id="modConfusionMatrix" style="background:var(--bg-page); padding:16px; border-radius:var(--radius-md); font-family:monospace; font-size:13px;">
+              <!-- JS populated -->
+            </div>
+
+            <div class="alert-box info" style="margin-top:16px;">
+              <h4>Decision-Support Notice</h4>
+              <p>
+                This model serves strictly as an assistive tool for ASHA workers to prioritize clinical referrals.
+                It is never an automated clinical diagnosis.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14. REPORTS & COVERAGE ANALYTICS VIEW -->
+    <section id="view-reports" class="view-panel">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>📈 Immunization Coverage & Dropout Rate Analytics</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+              Macro-level benchmarking calculated directly from the verified <code>Child Immunization Dataset.xls</code> across 674 districts.
+            </p>
+          </div>
+          <span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:13px;">
+            Dataset: 674 Districts
+          </span>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Total Districts Analyzed</div>
+            <div class="kpi-val" id="repDistricts">674</div>
+            <div class="kpi-sub">Across 36 States/UTs</div>
+          </div>
+          <div class="kpi-card terracotta">
+            <div class="kpi-label">National Penta Dropout Rate</div>
+            <div class="kpi-val" id="repPentaDropout" style="color:var(--terracotta);">8.0%</div>
+            <div class="kpi-sub">Penta 1 to Penta 3 dropout gap</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Fully Immunized (9-11m)</div>
+            <div class="kpi-val" style="font-size:22px;" id="repFullyImmunized">-</div>
+            <div class="kpi-sub">From dataset records</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">BCG Administered Total</div>
+            <div class="kpi-val" style="font-size:22px;" id="repBcgTotal">-</div>
+            <div class="kpi-sub">Birth dose coverage</div>
+          </div>
+        </div>
+
+        <h4 style="font-size:16px; font-weight:700; margin: 20px 0 12px;">Top States Coverage Benchmarks & Dropout Gaps</h4>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>State / UT</th>
+                <th>Districts</th>
+                <th>BCG Coverage</th>
+                <th>Penta 1</th>
+                <th>Penta 3</th>
+                <th>Dropout % (Penta1 to 3)</th>
+                <th>Total Fully Immunized</th>
+                <th>ASHA Sessions Held</th>
+              </tr>
+            </thead>
+            <tbody id="repStatesTableBody">
+              <!-- JS populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <h4 style="font-size:16px; font-weight:700; margin: 24px 0 12px;">Variables Data Dictionary</h4>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Variable Code</th>
+                <th>Variable Name</th>
+                <th>Official Description</th>
+              </tr>
+            </thead>
+            <tbody id="repDictTableBody">
+              <!-- JS populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal for Administering / Updating Child Vaccine -->
+  <div id="vaccineModal" class="modal-overlay" style="display:none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalVaccineTitle">Record Administered Vaccine</h3>
+        <button class="modal-close" onclick="app.closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="recordVaccineForm">
+          <input type="hidden" id="modalImmId">
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Child Name & Vaccine:</label>
+            <div id="modalChildDetails" style="font-weight:700; padding:8px 0; color:var(--primary-dark); font-size:15px;"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label for="modalGivenDate">Date Administered *</label>
+            <input type="date" id="modalGivenDate" class="form-control" required>
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label for="modalBatchNo">Vaccine Vial Batch Number</label>
+            <input type="text" id="modalBatchNo" class="form-control" placeholder="e.g. B-2026-X4">
+          </div>
+          <div class="form-group" style="margin-bottom:20px;">
+            <label for="modalNotes">Adverse Events / Clinical Notes</label>
+            <textarea id="modalNotes" class="form-control" rows="2" placeholder="e.g. Mild fever counseled, paracetamol drops advised if needed"></textarea>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <button type="submit" class="btn btn-primary" style="flex:1;">Mark as Administered</button>
+            <button type="button" class="btn btn-outline" onclick="app.closeModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Viewing Child Immunization Schedule (UIP) -->
+  <div id="childScheduleModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) app.closeScheduleModal()">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 id="scheduleModalTitle" style="margin-bottom:2px; font-size:18px;">👶 Child Immunization Schedule (UIP)</h3>
+          <p id="scheduleModalSubtitle" style="font-size:13px; color:var(--text-muted); margin:0;">Universal Immunization Programme schedule & tracking</p>
+        </div>
+        <button class="modal-close" onclick="app.closeScheduleModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:18px;">
+        <!-- Child Details Banner -->
+        <div id="scheduleChildBanner" style="background:var(--primary-light); border:1px solid var(--border-strong); border-radius:var(--radius-md); padding:12px 16px; margin-bottom:16px; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; font-size:13px;">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Progress Bar & Summary Stats -->
+        <div style="margin-bottom:16px; background:#fff; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:13px; font-weight:700;">
+            <span>UIP Vaccination Progress</span>
+            <span id="scheduleProgressText">0 / 12 Vaccines Completed (0%)</span>
+          </div>
+          <div style="height:10px; background:var(--bg-page); border-radius:5px; overflow:hidden; border:1px solid var(--border-subtle);">
+            <div id="scheduleProgressBar" style="height:100%; width:0%; background:var(--primary); transition:width 0.3s ease;"></div>
+          </div>
+          <div id="scheduleStatBadges" style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; font-size:12px;">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn btn-outline btn-sm active" id="btnFilterAll" onclick="app.filterSchedule('ALL')">All Doses (12)</button>
+            <button type="button" class="btn btn-outline btn-sm" id="btnFilterPending" onclick="app.filterSchedule('PENDING')">Due / Overdue</button>
+            <button type="button" class="btn btn-outline btn-sm" id="btnFilterCompleted" onclick="app.filterSchedule('COMPLETED')">Completed</button>
+          </div>
+          <span style="font-size:12px; color:var(--text-muted);">Standard UIP India Schedule (Birth to 24 Months)</span>
+        </div>
+
+        <!-- Table of Vaccines -->
+        <div class="table-responsive" style="max-height:380px; overflow-y:auto; border:1px solid var(--border-subtle); border-radius:var(--radius-sm);">
+          <table class="data-table" style="margin:0;">
+            <thead style="position:sticky; top:0; background:#f0f4f3; z-index:1;">
+              <tr>
+                <th>Age Milestone</th>
+                <th>Vaccine Name</th>
+                <th>Dose</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Administered Info</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+          <button type="button" class="btn btn-outline" onclick="app.closeScheduleModal()">Close Schedule</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div><strong>MediConnect</strong> — A Predictive EHR Companion for ASHA Workers in Low-Internet Rural Areas</div>
+    <div class="footer-note">Decision-support prototype only. Truthful data, verified ML model, and local SQL database. No fabricated statistics.</div>
+  </footer>
+
+  <script src="/static/js/i18n.js?v=2.1.0"></script>
+  <script src="/static/js/app.js?v=2.1.0"></script>
+</body>
+</html>

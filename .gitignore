@@ -1,0 +1,44 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging / local zips
+*.zip
+Mediconnect_app.zip
+build/
+dist/
+*.egg-info/
+
+# Local SQLite database files
+*.db
+*.db-journal
+*.db-wal
+*.sqlite3
+mediconnect.db
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Environment variables & secrets
+.env*
+*.env
+
+# IDE & Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,129 @@
+%% MediConnect - Entity Relationship (ER) Diagram
+%% Direct mapping from actual SQLite schema (mediconnect.db)
+
+erDiagram
+    USERS {
+        INTEGER id PK "AUTOINCREMENT"
+        TEXT username "UNIQUE, NOT NULL"
+        TEXT full_name "NOT NULL"
+        TEXT role "NOT NULL, DEFAULT 'asha_worker'"
+        TEXT village "NOT NULL"
+        TEXT sub_center "DEFAULT ''"
+        TEXT phone "DEFAULT ''"
+        TEXT password_hash "NOT NULL"
+        TEXT salt "NOT NULL"
+        TEXT created_at "NOT NULL"
+    }
+
+    PATIENTS {
+        INTEGER id PK "AUTOINCREMENT"
+        TEXT client_uid "UNIQUE"
+        TEXT full_name "NOT NULL"
+        INTEGER age "NOT NULL"
+        TEXT husband_name "DEFAULT ''"
+        TEXT village "NOT NULL"
+        TEXT phone "DEFAULT ''"
+        TEXT rch_id "DEFAULT ''"
+        TEXT lmp_date "ANC LMP"
+        TEXT edd_date "ANC EDD"
+        INTEGER gravida "DEFAULT 1"
+        INTEGER high_risk_flag "DEFAULT 0"
+        TEXT notes "DEFAULT ''"
+        INTEGER created_by FK "REFERENCES users(id)"
+        TEXT sync_status "DEFAULT 'SYNCED'"
+        TEXT created_at "NOT NULL"
+        TEXT updated_at "NOT NULL"
+    }
+
+    MATERNAL_RECORDS {
+        INTEGER id PK "AUTOINCREMENT"
+        TEXT client_uid "UNIQUE"
+        INTEGER patient_id FK "REFERENCES patients(id) ON DELETE CASCADE"
+        INTEGER visit_number "DEFAULT 1"
+        INTEGER age "Input feature: Age"
+        INTEGER systolic_bp "Input feature: SystolicBP"
+        INTEGER diastolic_bp "Input feature: DiastolicBP"
+        REAL blood_sugar "Input feature: BS"
+        REAL body_temp "Input feature: BodyTemp"
+        INTEGER heart_rate "Input feature: HeartRate"
+        TEXT risk_level "Predicted class: Low / Medium / High Risk"
+        REAL confidence "Predicted class probability"
+        TEXT model_version "Model version identifier"
+        TEXT action_notes "Procedural review notes"
+        INTEGER recorded_by FK "REFERENCES users(id)"
+        TEXT sync_status "DEFAULT 'SYNCED'"
+        TEXT recorded_at "NOT NULL"
+    }
+
+    CHILDREN {
+        INTEGER id PK "AUTOINCREMENT"
+        TEXT client_uid "UNIQUE"
+        INTEGER mother_id FK "REFERENCES patients(id) ON DELETE SET NULL"
+        TEXT name "NOT NULL"
+        TEXT gender "NOT NULL"
+        TEXT dob "NOT NULL"
+        REAL birth_weight "Weight in kg"
+        TEXT guardian_name "DEFAULT ''"
+        TEXT village "NOT NULL"
+        TEXT phone "DEFAULT ''"
+        TEXT rch_child_id "DEFAULT ''"
+        INTEGER created_by FK "REFERENCES users(id)"
+        TEXT sync_status "DEFAULT 'SYNCED'"
+        TEXT created_at "NOT NULL"
+        TEXT updated_at "NOT NULL"
+    }
+
+    IMMUNIZATIONS {
+        INTEGER id PK "AUTOINCREMENT"
+        TEXT client_uid "UNIQUE"
+        INTEGER child_id FK "REFERENCES children(id) ON DELETE CASCADE"
+        TEXT vaccine_name "NOT NULL (e.g. BCG, OPV, Penta)"
+        INTEGER dose_number "NOT NULL, DEFAULT 1"
+        TEXT due_date "NOT NULL"
+        TEXT given_date "Administration date"
+        TEXT status "COMPLETED, DUE, OVERDUE, FOLLOW_UP_REQUIRED"
+        TEXT batch_no "Vaccine vial batch"
+        TEXT notes "DEFAULT ''"
+        INTEGER administered_by FK "REFERENCES users(id)"
+        TEXT sync_status "DEFAULT 'SYNCED'"
+        TEXT recorded_at "NOT NULL"
+    }
+
+    SYMPTOM_LOGS {
+        INTEGER id PK "AUTOINCREMENT"
+        TEXT client_uid "UNIQUE"
+        TEXT village "NOT NULL"
+        TEXT person_name "NOT NULL"
+        INTEGER age "Age in years"
+        TEXT gender "Male / Female"
+        TEXT symptom_type "Fever, Diarrhea/Vomiting, Acute Respiratory, etc."
+        TEXT severity "Mild, Moderate, Severe"
+        TEXT onset_date "NOT NULL"
+        INTEGER asha_id FK "REFERENCES users(id)"
+        TEXT notes "DEFAULT ''"
+        TEXT sync_status "DEFAULT 'SYNCED'"
+        TEXT recorded_at "NOT NULL"
+    }
+
+    SYNC_AUDIT {
+        INTEGER id PK "AUTOINCREMENT"
+        INTEGER user_id FK "REFERENCES users(id)"
+        TEXT client_device_id "DEFAULT ''"
+        INTEGER records_pushed "Count of synced records"
+        TEXT sync_type "DEFAULT 'PUSH'"
+        TEXT status "SUCCESS / FAILED"
+        TEXT synced_at "NOT NULL"
+    }
+
+    %% Real Database Foreign Key Relationships
+    USERS ||--o{ PATIENTS : "registers (created_by)"
+    USERS ||--o{ MATERNAL_RECORDS : "records (recorded_by)"
+    USERS ||--o{ CHILDREN : "registers (created_by)"
+    USERS ||--o{ IMMUNIZATIONS : "administers (administered_by)"
+    USERS ||--o{ SYMPTOM_LOGS : "logs (asha_id)"
+    USERS ||--o{ SYNC_AUDIT : "triggers (user_id)"
+
+    PATIENTS ||--o{ MATERNAL_RECORDS : "has visits (patient_id)"
+    PATIENTS ||--o{ CHILDREN : "mother of (mother_id)"
+
+    CHILDREN ||--o{ IMMUNIZATIONS : "receives (child_id)"

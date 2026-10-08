@@ -1,0 +1,42 @@
+%% MediConnect - Activity Diagram
+%% Logical Runtime Workflow for Field Operations
+
+flowchart TD
+    classDef bwNode fill:#FFFFFF,stroke:#000000,stroke-width:1.5px;
+    classDef bwDecision fill:#FFFFFF,stroke:#000000,stroke-width:1.5px;
+    classDef bwTerminal fill:#000000,stroke:#000000,color:#FFFFFF,stroke-width:2px;
+
+    Start([Start]):::bwTerminal --> Login[ASHA Worker Login]:::bwNode
+    Login --> EnterData[Enter / Manage Health Data]:::bwNode
+    EnterData --> Validate[Validate Field Data]:::bwNode
+    Validate --> StoreLocal[Store / Update Local Data]:::bwNode
+    StoreLocal --> BranchChoice{Choose Required Function}:::bwDecision
+
+    %% Branch 1: Maternal Risk
+    BranchChoice -->|Maternal Risk| MatPrep[Prepare Six Features:\nAge, SysBP, DiaBP, BS, Temp, HR]:::bwNode
+    MatPrep --> MatInfer[Execute Saved RandomForestClassifier Model\nPOST /api/maternal/predict]:::bwNode
+    MatInfer --> MatResult[Generate Risk Result:\nLow / Medium / High Risk]:::bwNode
+
+    %% Branch 2: Immunization Follow-up
+    BranchChoice -->|Immunization Follow-up| ImmRead[Read SQLite Child & Vaccination Records]:::bwNode
+    ImmRead --> ImmCheck[Check National UIP Schedule]:::bwNode
+    ImmCheck --> ImmStatus[Determine Status:\nCompleted / Due / Overdue]:::bwNode
+    ImmStatus --> ImmList[Generate Actionable Follow-up List]:::bwNode
+
+    %% Branch 3: Disease Outbreak Early Warning
+    BranchChoice -->|Outbreak Early Warning| OutRead[Read SQLite Symptom Logs]:::bwNode
+    OutRead --> OutCalc[Calculate Recent 7-Day Count vs\nHistorical 30-Day Baseline]:::bwNode
+    OutCalc --> OutRules[Apply Statistical Anomaly Criteria]:::bwNode
+    OutRules --> OutResult[Generate Early Warning Alert\n(Non-clinical surveillance notice)]:::bwNode
+
+    %% Convergence
+    MatResult --> Dash[Display Dashboard, Alerts & Follow-up]:::bwNode
+    ImmList --> Dash
+    OutResult --> Dash
+
+    Dash --> NetCheck{Internet Available?}:::bwDecision
+    NetCheck -->|No| KeepOffline[Keep Local Storage Offline Queue\n(Pending Sync)]:::bwNode
+    NetCheck -->|Yes| SyncData[POST /api/sync/push\nSynchronize Pending Records]:::bwNode
+
+    KeepOffline --> EndNode([End]):::bwTerminal
+    SyncData --> EndNode

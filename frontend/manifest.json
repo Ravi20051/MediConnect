@@ -1,0 +1,17 @@
+{
+  "name": "MediConnect — ASHA Field Companion",
+  "short_name": "MediConnect",
+  "description": "Predictive EHR Companion for ASHA Workers in Low-Internet Rural Areas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDFBF7",
+  "theme_color": "#064E3B",
+  "icons": [
+    {
+      "src": "/static/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

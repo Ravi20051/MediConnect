@@ -1,0 +1,32 @@
+%% MediConnect - UML Use Case Diagram
+%% Primary Actor: ASHA Worker
+%% System: MediConnect Companion
+
+flowchart LR
+    classDef actorClass fill:#FFFFFF,stroke:#000000,stroke-width:2px;
+    classDef usecaseClass fill:#FFFFFF,stroke:#000000,stroke-width:1.5px,rx:20,ry:20;
+    classDef boundaryClass fill:#FAFAFA,stroke:#000000,stroke-width:2px,stroke-dasharray: 4 4;
+
+    ASHA["ASHA Worker\n(Field Health Worker)"]:::actorClass
+
+    subgraph MediConnect ["MediConnect System Boundary"]
+        UC0(["Login / Authenticate"]):::usecaseClass
+        UC1(["1. Manage Health Records"]):::usecaseClass
+        UC2(["2. Predict Maternal Health Risk"]):::usecaseClass
+        UC3(["3. Manage Immunization Follow-up"]):::usecaseClass
+        UC4(["4. Detect Disease Outbreak"]):::usecaseClass
+        UC5(["5. View Risk & Health Alerts"]):::usecaseClass
+        UC6(["6. View Immunization Follow-up List"]):::usecaseClass
+        UC7(["7. Access Offline Records"]):::usecaseClass
+        UC8(["8. Synchronize Records"]):::usecaseClass
+    end
+
+    ASHA --- UC0
+    ASHA --- UC1
+    ASHA --- UC2
+    ASHA --- UC3
+    ASHA --- UC4
+    ASHA --- UC5
+    ASHA --- UC6
+    ASHA --- UC7
+    ASHA --- UC8

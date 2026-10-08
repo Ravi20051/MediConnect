@@ -1,0 +1,50 @@
+%% MediConnect - System Architecture Diagram
+%% Truthful Technical Stack & Architecture
+
+flowchart TB
+    classDef client fill:#FFFFFF,stroke:#000000,stroke-width:2px;
+    classDef frontend fill:#FFFFFF,stroke:#000000,stroke-width:1.5px;
+    classDef backend fill:#FFFFFF,stroke:#000000,stroke-width:1.5px;
+    classDef module fill:#FAFAFA,stroke:#000000,stroke-width:1.5px;
+    classDef db fill:#FFFFFF,stroke:#000000,stroke-width:2px;
+
+    User(["ASHA Worker / Field Device\n(Web Browser)"]):::client
+
+    subgraph ClientTier ["Presentation Tier (Responsive Web Client)"]
+        UI["HTML5 / CSS3 / Vanilla JavaScript"]:::frontend
+        OfflineStore[("Browser LocalStorage\nOffline Queue")]:::frontend
+    end
+
+    subgraph ServerTier ["Application Tier (Local / Server Backend)"]
+        AppServer["FastAPI + Uvicorn Server\n(REST API Gateway)"]:::backend
+
+        subgraph Modules ["Three Intelligent Decision-Support Modules"]
+            Mod1["1. Maternal Risk Prediction\n(Supervised ML: RandomForestClassifier)\nArtifact: ml/maternal_risk_model.joblib\n6 Features: Age, SysBP, DiaBP, BS, Temp, HR"]:::module
+            Mod2["2. Immunization Follow-Up\n(Rule-Based UIP Schedule Engine)\nIdentifies: COMPLETED, DUE, OVERDUE\nUrgency scoring & VHSND mobilization"]:::module
+            Mod3["3. Disease Outbreak Early Warning\n(Rolling Baseline Anomaly Detection)\n7-day recent vs 30-day baseline comparison\nNon-clinical statistical surveillance notice"]:::module
+        end
+
+        SyncEngine["Synchronization Gateway\n(POST /api/sync/push)\nIdempotent client_uid verification"]:::backend
+    end
+
+    subgraph DataTier ["Persistence Tier (Local Storage)"]
+        SQL[(SQLite Database: mediconnect.db\n7 Tables: users, patients, maternal_records,\nchildren, immunizations, symptom_logs, sync_audit)]:::db
+    end
+
+    %% Flows
+    User <-->|User Interactions & Forms| UI
+    UI <-->|Cache Offline Records\n(When disconnected)| OfflineStore
+    
+    UI -->|REST API Requests\n(Online or Localhost)| AppServer
+    OfflineStore -->|Pending Records Batch\n(On Reconnection)| SyncEngine
+
+    AppServer -->|Feature Array| Mod1
+    Mod1 -->|Risk Level & Probabilities| AppServer
+
+    AppServer <-->|Query & Evaluate Child Vaccines| Mod2
+    AppServer <-->|Query & Analyze Symptom Spikes| Mod3
+
+    SyncEngine -->|Atomic Upsert & Log Audit| SQL
+    Mod2 <-->|Read/Update Immunizations| SQL
+    Mod3 <-->|Read Symptom Logs| SQL
+    AppServer <-->|CRUD Operations & Auth| SQL

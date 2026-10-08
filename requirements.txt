@@ -1,0 +1,15 @@
+# MediConnect - System Dependencies
+# Operating System: Windows 10/11 or Ubuntu
+# Python: 3.10+
+
+fastapi>=0.115.0
+uvicorn>=0.30.0
+scikit-learn==1.9.0
+joblib==1.5.3
+pandas>=2.2.0
+numpy>=1.26.0
+xlrd==2.0.2
+openpyxl>=3.1.0
+pydantic>=2.7.0
+httpx>=0.27.0
+psycopg2-binary>=2.9.9

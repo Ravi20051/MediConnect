@@ -1,0 +1,32 @@
+%% MediConnect - Data Flow Diagram (DFD) Level 2
+%% Decomposition of 1.0: Manage Health Records
+
+flowchart TB
+    classDef entity fill:#FFFFFF,stroke:#000000,stroke-width:2px;
+    classDef process fill:#FFFFFF,stroke:#000000,stroke-width:1.5px,rx:15,ry:15;
+    classDef store fill:#FAFAFA,stroke:#000000,stroke-width:1.5px;
+    classDef decision fill:#FFFFFF,stroke:#000000,stroke-width:1.5px;
+
+    ASHA["ASHA Worker"]:::entity
+
+    P11(["1.1 Capture Patient Details"]):::process
+    P12(["1.2 Validate Patient Data"]):::process
+    P13(["1.3 Store / Update Patient Record"]):::process
+    P14(["1.4 Retrieve Patient Record"]):::process
+
+    D1[("D1 Patients (SQLite)")]:::store
+    D5[("D5 Browser Offline Queue\n(LocalStorage)")]:::store
+
+    ASHA -->|New Patient Input (Name, Age, Village, RCH ID)| P11
+    P11 -->|Demographic Payload| P12
+
+    P12 -->|Validation Errors| ASHA
+    P12 -->|Validated Patient Record| P13
+
+    P13 -->|Online Mode (Direct Insert/Update)| D1
+    P13 -->|Offline Mode (Cached with client_uid)| D5
+
+    ASHA -->|Search / Filter Query| P14
+    D1 -->|Read Patient Data (Online)| P14
+    D5 -->|Read Local Cached Patients (Offline)| P14
+    P14 -->|Patient Profiles & ANC Records| ASHA
