@@ -5,9 +5,9 @@ class OutbreakDetectorService:
     def __init__(self, get_db_connection_func):
         self.get_db = get_db_connection_func
 
-    def detect_anomalies(self, recent_days: int = 7, baseline_days: int = 30) -> dict:
+    def detect_anomalies(self, recent_days: int = 7, baseline_days: int = 30, village_filter: str = None) -> dict:
         """
-        Analyzes live symptom logs in SQLite across villages.
+        Analyzes live symptom logs in SQLite across villages or for a specific village.
         Computes rolling baseline vs recent case clusters.
         Honest anomaly detection without fabricated medical claims.
         """
@@ -116,15 +116,25 @@ class OutbreakDetectorService:
                 }]
 
         # Recent individual symptom entries for field ledger
-        cursor.execute("""
+        log_query = """
             SELECT id, village, person_name, age, gender, symptom_type, severity, onset_date, recorded_at
             FROM symptom_logs
-            ORDER BY onset_date DESC, id DESC
-            LIMIT 20
-        """)
+        """
+        log_params = []
+        if village_filter:
+            log_query += " WHERE village = ?"
+            log_params.append(village_filter.strip())
+        log_query += " ORDER BY onset_date DESC, id DESC LIMIT 20"
+        cursor.execute(log_query, log_params)
         recent_log_entries = [dict(row) for row in cursor.fetchall()]
 
         conn.close()
+
+        # Apply village filter if specified
+        if village_filter:
+            vf_lower = village_filter.strip().lower()
+            alerts = [a for a in alerts if a["village"].strip().lower() == vf_lower]
+            monitored_villages = {k: v for k, v in monitored_villages.items() if k.strip().lower() == vf_lower}
 
         return {
             "analysis_window_days": recent_days,

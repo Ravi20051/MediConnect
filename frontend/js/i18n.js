@@ -37,6 +37,88 @@ const I18N_DICTIONARY = {
     hi: "लॉगआउट"
   },
 
+  // Authentication & Registration
+  login_heading: {
+    en: "Welcome Back",
+    hi: "पुनः स्वागत है"
+  },
+  login_subheading: {
+    en: "Sign in to continue to MediConnect",
+    hi: "मेडीकनेक्ट में जारी रखने हेतु लॉगिन करें"
+  },
+  login_user: {
+    en: "Username",
+    hi: "यूज़रनेम"
+  },
+  login_pwd: {
+    en: "Password",
+    hi: "पासवर्ड"
+  },
+  login_remember: {
+    en: "Remember username on this device",
+    hi: "इस डिवाइस पर यूज़रनेम याद रखें"
+  },
+  btn_signin: {
+    en: "Sign In",
+    hi: "साइन इन करें"
+  },
+  txt_new_user: {
+    en: "New health worker or sub-center staff?",
+    hi: "नई आशा कार्यकर्ता या उप-केंद्र स्वास्थ्य कर्मी?"
+  },
+  link_create_account: {
+    en: "Create an account",
+    hi: "नया खाता बनाएं"
+  },
+  signup_heading: {
+    en: "Create Field Account",
+    hi: "नया फील्ड खाता बनाएं"
+  },
+  signup_subheading: {
+    en: "Enter your details to register as an ASHA worker",
+    hi: "आशा कार्यकर्ता के रूप में पंजीकरण हेतु विवरण दर्ज करें"
+  },
+  role_assigned: {
+    en: "Assigned Role: ASHA Field Worker",
+    hi: "आवंटित पद: आशा फील्ड कार्यकर्ता"
+  },
+  role_desc: {
+    en: "Standard Frontline Community Health Worker",
+    hi: "प्राथमिक सामुदायिक स्वास्थ्य कार्यकर्ता"
+  },
+  full_name: {
+    en: "Full Name",
+    hi: "पूरा नाम"
+  },
+  village_field: {
+    en: "Village / Ward",
+    hi: "गाँव / वार्ड"
+  },
+  sub_center_field: {
+    en: "Sub-Center Name",
+    hi: "उप-स्वास्थ्य केंद्र का नाम"
+  },
+  phone_field: {
+    en: "Contact Phone",
+    hi: "संपर्क फ़ोन नंबर"
+  },
+  confirm_pwd: {
+    en: "Confirm Password",
+    hi: "पासवर्ड की पुष्टि करें"
+  },
+  btn_create_account: {
+    en: "Create Field Account",
+    hi: "फील्ड खाता बनाएं"
+  },
+  txt_existing_user: {
+    en: "Already registered in your sub-center?",
+    hi: "क्या आपके उप-केंद्र में पहले से पंजीकृत हैं?"
+  },
+  link_signin_here: {
+    en: "Sign in here",
+    hi: "यहाँ साइन इन करें"
+  },
+
   // Navigation Tabs
   tab_dashboard: {
     en: "Dashboard",
@@ -372,6 +454,37 @@ class I18nManager {
     const langSelect = document.getElementById('langSelector');
     if (langSelect && langSelect.value !== this.currentLang) {
       langSelect.value = this.currentLang;
+    }
+
+    // 10. Login & Signup View Translations
+    const textMappings = {
+      'loginHeadingText': 'login_heading',
+      'loginSubheadingText': 'login_subheading',
+      'lblLoginUser': 'login_user',
+      'lblLoginPwd': 'login_pwd',
+      'lblRememberMe': 'login_remember',
+      'btnTextLogin': 'btn_signin',
+      'txtNewUser': 'txt_new_user',
+      'linkToSignup': 'link_create_account',
+      'signupHeadingText': 'signup_heading',
+      'signupSubheadingText': 'signup_subheading',
+      'lblAssignedRole': 'role_assigned',
+      'lblRoleDesc': 'role_desc',
+      'lblRegFullName': 'full_name',
+      'lblRegUsername': 'login_user',
+      'lblRegVillage': 'village_field',
+      'lblRegSubCenter': 'sub_center_field',
+      'lblRegPhone': 'phone_field',
+      'lblRegPassword': 'login_pwd',
+      'lblRegConfirmPwd': 'confirm_pwd',
+      'btnTextSignup': 'btn_create_account',
+      'txtExistingUser': 'txt_existing_user',
+      'linkToLogin': 'link_signin_here'
+    };
+
+    for (const [id, key] of Object.entries(textMappings)) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = this.get(key);
     }
   }
 }

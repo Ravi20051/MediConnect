@@ -75,6 +75,20 @@ const app = {
     }
   },
 
+  async apiFetch(url, options = {}) {
+    options = options || {};
+    options.headers = options.headers || {};
+    const token = localStorage.getItem('mc_token');
+    if (token) {
+      if (typeof options.headers === 'object' && !Array.isArray(options.headers)) {
+        if (!options.headers['Authorization']) {
+          options.headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+    }
+    return fetch(url, options);
+  },
+
   // 2. Authentication
   checkStoredAuth() {
     const stored = localStorage.getItem('mc_user');
@@ -84,33 +98,107 @@ const app = {
       } catch (e) {
         this.currentUser = null;
       }
+    } else {
+      this.currentUser = null;
     }
-    // Default fallback demo user if none stored
-    if (!this.currentUser) {
-      this.currentUser = {
-        id: 1,
-        username: "asha_sunita",
-        full_name: "Sunita Devi",
-        role: "asha_worker",
-        village: "Rampur",
-        sub_center: "Rampur Sub-Center"
-      };
-      localStorage.setItem('mc_user', JSON.stringify(this.currentUser));
+
+    // Restore remembered username if present
+    const remembered = localStorage.getItem('mc_remembered_username');
+    const uField = document.getElementById('loginUsername');
+    const remBox = document.getElementById('loginRememberMe');
+    if (uField && remembered) {
+      uField.value = remembered;
+      if (remBox) remBox.checked = true;
     }
   },
 
   updateUserUI() {
     if (!this.currentUser) return;
-    document.getElementById('headerUserName').textContent = this.currentUser.full_name;
-    document.getElementById('headerUserVillage').textContent = this.currentUser.village;
-    document.getElementById('dashAshaName').textContent = this.currentUser.full_name;
-    document.getElementById('dashSubCenter').textContent = this.currentUser.village;
+    const headerName = document.getElementById('headerUserName');
+    const headerVillage = document.getElementById('headerUserVillage');
+    const dashName = document.getElementById('dashAshaName');
+    const dashVillage = document.getElementById('dashVillage');
+    const dashCenter = document.getElementById('dashSubCenter');
+
+    const vName = this.currentUser.village || 'Field';
+    if (headerName) headerName.textContent = this.currentUser.full_name || this.currentUser.username;
+    if (headerVillage) headerVillage.textContent = `Village: ${vName}`;
+    if (dashName) dashName.textContent = this.currentUser.full_name || this.currentUser.username;
+    if (dashVillage) dashVillage.textContent = vName;
+    if (dashCenter) dashCenter.textContent = this.currentUser.sub_center || `${vName} Sub-Center`;
+  },
+
+  showAuthAlert(formType, message, type = 'error') {
+    const banner = document.getElementById(`${formType}AlertBanner`);
+    const msgEl = document.getElementById(`${formType}AlertMsg`);
+    const iconEl = document.getElementById(`${formType}AlertIcon`);
+    if (!banner || !msgEl) return;
+    banner.className = `auth-alert ${type}`;
+    msgEl.textContent = message;
+    if (iconEl) iconEl.textContent = type === 'success' ? '✅' : '⚠️';
+    banner.style.display = 'flex';
+  },
+
+  hideAuthAlert(formType) {
+    const banner = document.getElementById(`${formType}AlertBanner`);
+    if (banner) banner.style.display = 'none';
+  },
+
+  devQuickFill(username, password) {
+    const u = document.getElementById('loginUsername');
+    const p = document.getElementById('loginPassword');
+    if (u) u.value = username;
+    if (p) p.value = password;
+    this.hideAuthAlert('login');
+    const btn = document.getElementById('btnSubmitLogin');
+    if (btn) btn.focus();
+  },
+
+  setupPasswordToggles() {
+    const pairs = [
+      { btnId: 'loginPwdToggle', inputId: 'loginPassword' },
+      { btnId: 'regPwdToggle', inputId: 'regPassword' },
+      { btnId: 'regConfirmPwdToggle', inputId: 'regConfirmPassword' }
+    ];
+
+    pairs.forEach(({ btnId, inputId }) => {
+      const btn = document.getElementById(btnId);
+      const input = document.getElementById(inputId);
+      if (btn && input && !btn.dataset.toggleBound) {
+        btn.dataset.toggleBound = 'true';
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const isPassword = input.type === 'password';
+          input.type = isPassword ? 'text' : 'password';
+          const eye = btn.querySelector('.eye-text');
+          if (eye) eye.textContent = isPassword ? '🙈' : '👁️';
+        });
+      }
+    });
   },
 
   async handleLogin(e) {
     e.preventDefault();
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
+    this.hideAuthAlert('login');
+
+    const username = document.getElementById('loginUsername')?.value.trim();
+    const password = document.getElementById('loginPassword')?.value;
+    const rememberMe = document.getElementById('loginRememberMe')?.checked;
+
+    if (!username || !password) {
+      this.showAuthAlert('login', 'Please enter both username and password.');
+      return;
+    }
+
+    const btn = document.getElementById('btnSubmitLogin');
+    const spinner = document.getElementById('loginSpinner');
+    const arrow = document.getElementById('loginArrow');
+    const text = document.getElementById('btnTextLogin');
+
+    if (btn) btn.disabled = true;
+    if (spinner) spinner.style.display = 'inline-block';
+    if (arrow) arrow.style.display = 'none';
+    if (text) text.textContent = 'Signing in...';
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -120,8 +208,8 @@ const app = {
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        alert(err.detail || "Login failed. Check credentials.");
+        const err = await res.json().catch(() => ({}));
+        this.showAuthAlert('login', err.detail || 'Invalid username or password. Please verify credentials.');
         return;
       }
 
@@ -129,35 +217,136 @@ const app = {
       this.currentUser = data.user;
       localStorage.setItem('mc_user', JSON.stringify(this.currentUser));
       localStorage.setItem('mc_token', data.token);
+
+      if (rememberMe) {
+        localStorage.setItem('mc_remembered_username', username);
+      } else {
+        localStorage.removeItem('mc_remembered_username');
+      }
+
       this.updateUserUI();
       this.showView('dashboard');
       this.loadDashboardData();
     } catch (err) {
-      // Offline fallback login for known demo user
-      if (username === "asha_sunita" || username === "asha_anita") {
+      // Offline fallback login for known cached field workers
+      if (username === 'asha_sunita' || username === 'asha_anita') {
         this.currentUser = {
-          id: username === "asha_sunita" ? 1 : 2,
+          id: username === 'asha_sunita' ? 1 : 2,
           username: username,
-          full_name: username === "asha_sunita" ? "Sunita Devi" : "Anita Sharma",
-          role: "asha_worker",
-          village: username === "asha_sunita" ? "Rampur" : "Bhimpur",
-          sub_center: username === "asha_sunita" ? "Rampur Sub-Center" : "Bhimpur Sub-Center"
+          full_name: username === 'asha_sunita' ? 'Sunita Devi' : 'Anita Sharma',
+          role: 'asha_worker',
+          village: username === 'asha_sunita' ? 'Rampur' : 'Bhimpur',
+          sub_center: username === 'asha_sunita' ? 'Rampur Sub-Center' : 'Bhimpur Sub-Center'
         };
         localStorage.setItem('mc_user', JSON.stringify(this.currentUser));
         this.updateUserUI();
         this.showView('dashboard');
         this.loadDashboardData();
-        alert("Logged in offline using cached field credentials.");
       } else {
-        alert("Network unreachable and no offline credentials cached for this user.");
+        this.showAuthAlert('login', 'Network connection unavailable. Please connect online to authenticate.');
       }
+    } finally {
+      if (btn) btn.disabled = false;
+      if (spinner) spinner.style.display = 'none';
+      if (arrow) arrow.style.display = 'inline-block';
+      if (text) text.textContent = 'Sign In';
+    }
+  },
+
+  async handleSignup(e) {
+    e.preventDefault();
+    this.hideAuthAlert('signup');
+
+    const fullName = document.getElementById('regFullName')?.value.trim();
+    const username = document.getElementById('regUsername')?.value.trim();
+    const village = document.getElementById('regVillage')?.value.trim();
+    const subCenter = document.getElementById('regSubCenter')?.value.trim();
+    const phone = document.getElementById('regPhone')?.value.trim();
+    const password = document.getElementById('regPassword')?.value;
+    const confirmPassword = document.getElementById('regConfirmPassword')?.value;
+
+    if (!fullName || !username || !village || !subCenter || !password) {
+      this.showAuthAlert('signup', 'Please fill in all required fields.');
+      return;
+    }
+
+    if (password.length < 6) {
+      this.showAuthAlert('signup', 'Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      this.showAuthAlert('signup', 'Passwords do not match. Please verify.');
+      document.getElementById('regConfirmPassword')?.focus();
+      return;
+    }
+
+    const btn = document.getElementById('btnSubmitSignup');
+    const spinner = document.getElementById('signupSpinner');
+    const arrow = document.getElementById('signupArrow');
+    const text = document.getElementById('btnTextSignup');
+
+    if (btn) btn.disabled = true;
+    if (spinner) spinner.style.display = 'inline-block';
+    if (arrow) arrow.style.display = 'none';
+    if (text) text.textContent = 'Creating Account...';
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: fullName,
+          username: username,
+          password: password,
+          village: village,
+          sub_center: subCenter,
+          phone: phone
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        this.showAuthAlert('signup', err.detail || 'Registration failed. Please check inputs.');
+        return;
+      }
+
+      const data = await res.json();
+      
+      // Successfully registered! Transition to login with prefilled username
+      document.getElementById('signupForm')?.reset();
+      this.showView('login');
+      const loginUserInput = document.getElementById('loginUsername');
+      if (loginUserInput) loginUserInput.value = username;
+      const loginPwdInput = document.getElementById('loginPassword');
+      if (loginPwdInput) {
+        loginPwdInput.value = '';
+        loginPwdInput.focus();
+      }
+      this.showAuthAlert('login', data.message || 'Account registered successfully! You can now sign in.', 'success');
+    } catch (err) {
+      this.showAuthAlert('signup', 'Network connection error. Please verify server connectivity.');
+    } finally {
+      if (btn) btn.disabled = false;
+      if (spinner) spinner.style.display = 'none';
+      if (arrow) arrow.style.display = 'inline-block';
+      if (text) text.textContent = 'Create Field Account';
     }
   },
 
   logout() {
     localStorage.removeItem('mc_user');
     localStorage.removeItem('mc_token');
+    localStorage.removeItem('mc_cached_stats');
+    localStorage.removeItem('mc_last_sync_time');
     this.currentUser = null;
+    this.cachedData = {
+      patients: [],
+      children: [],
+      followups: [],
+      alerts: [],
+      stats: null
+    };
     this.showView('login');
   },
 
@@ -165,6 +354,24 @@ const app = {
   showView(viewName, options = {}) {
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+
+    const navBar = document.getElementById('mainNavBar');
+    const userBadge = document.getElementById('userBadge');
+    const cleanBtn = document.getElementById('cleanRecordsBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    if (viewName === 'login' || viewName === 'signup') {
+      if (navBar) navBar.style.display = 'none';
+      if (userBadge) userBadge.style.display = 'none';
+      if (cleanBtn) cleanBtn.style.display = 'none';
+      if (logoutBtn) logoutBtn.style.display = 'none';
+      this.hideAuthAlert(viewName);
+    } else {
+      if (navBar) navBar.style.display = '';
+      if (userBadge) userBadge.style.display = 'flex';
+      if (cleanBtn) cleanBtn.style.display = 'inline-flex';
+      if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+    }
 
     const targetView = document.getElementById(`view-${viewName}`);
     if (targetView) {
@@ -382,7 +589,7 @@ const app = {
         symptoms: [...this.offlineQueue.symptoms]
       };
 
-      const res = await fetch('/api/sync/push', {
+      const res = await this.apiFetch('/api/sync/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -462,7 +669,7 @@ const app = {
       let stats = null;
       if (this.isOnline) {
         try {
-          const res = await fetch('/api/dashboard/stats');
+          const res = await this.apiFetch('/api/dashboard/stats');
           if (res.ok) {
             stats = await res.json();
             this.cachedData.stats = stats;
@@ -487,10 +694,11 @@ const app = {
       // Load Urgent Alerts into Banner if any
       const alertContainer = document.getElementById('dashAlertBannerContainer');
       if (stats.active_outbreak_alerts > 0) {
+        const vText = this.currentUser?.village || 'the village';
         alertContainer.innerHTML = `
           <div class="alert-box danger" style="cursor:pointer;" onclick="app.showView('outbreak-alerts')">
             <h4>🚨 Urgent Village Health Alert: Unusual Symptom Pattern Detected</h4>
-            <p>A recent cluster of gastrointestinal / acute symptom cases was detected in Rampur village. Click to review field advisory and preventive mobilization.</p>
+            <p>A recent cluster of acute symptom cases was detected in ${vText}. Click to review field advisory and preventive mobilization.</p>
           </div>
         `;
       } else {
@@ -507,7 +715,7 @@ const app = {
   async loadDashboardPreviews() {
     // High-risk preview
     try {
-      const res = await fetch('/api/patients?high_risk_only=true');
+      const res = await this.apiFetch('/api/patients?high_risk_only=true');
       const data = await res.json();
       const container = document.getElementById('dashHighRiskList');
       if (data.patients.length === 0) {
@@ -529,7 +737,7 @@ const app = {
 
     // Immunization preview
     try {
-      const res = await fetch('/api/immunizations/follow-up');
+      const res = await this.apiFetch('/api/immunizations/follow-up');
       const data = await res.json();
       const container = document.getElementById('dashImmunizationList');
       const list = data.follow_up_list || [];
@@ -570,7 +778,7 @@ const app = {
       let patients = [];
       if (this.isOnline) {
         try {
-          const res = await fetch(url);
+          const res = await this.apiFetch(url);
           if (res.ok) {
             const data = await res.json();
             patients = data.patients || [];
@@ -638,7 +846,7 @@ const app = {
       full_name: document.getElementById('mFullName').value.trim(),
       age: parseInt(document.getElementById('mAge').value),
       husband_name: document.getElementById('mHusbandName').value.trim(),
-      village: document.getElementById('mVillage').value,
+      village: (this.currentUser && this.currentUser.role === 'asha_worker') ? this.currentUser.village : document.getElementById('mVillage').value,
       phone: document.getElementById('mPhone').value.trim(),
       rch_id: document.getElementById('mRchId').value.trim(),
       lmp_date: document.getElementById('mLmpDate').value || null,
@@ -658,7 +866,7 @@ const app = {
 
     if (this.isOnline) {
       try {
-        const res = await fetch('/api/patients', {
+        const res = await this.apiFetch('/api/patients', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(patientData)
@@ -749,7 +957,7 @@ const app = {
     try {
       // The local FastAPI server is the local inference engine.
       // Internet connectivity is NOT required to call localhost.
-      const res = await fetch('/api/maternal/predict', {
+      const res = await this.apiFetch('/api/maternal/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -881,7 +1089,7 @@ const app = {
 
     if (this.isOnline && !isNaN(patientId)) {
       try {
-        await fetch('/api/maternal/records', {
+        await this.apiFetch('/api/maternal/records', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -908,7 +1116,7 @@ const app = {
       let children = [];
       if (this.isOnline) {
         try {
-          const res = await fetch('/api/children');
+          const res = await this.apiFetch('/api/children');
           if (res.ok) {
             const data = await res.json();
             children = data.children || [];
@@ -1078,7 +1286,7 @@ const app = {
       // Try server if online and childId > 0
       if (this.isOnline && childId > 0) {
         try {
-          const res = await fetch(`/api/children/${childId}`);
+          const res = await this.apiFetch(`/api/children/${childId}`);
           if (res.ok) {
             const data = await res.json();
             child = data.child;
@@ -1387,7 +1595,7 @@ const app = {
       gender: document.getElementById('chGender').value,
       dob: document.getElementById('chDob').value,
       birth_weight: parseFloat(document.getElementById('chWeight').value) || null,
-      village: document.getElementById('chVillage').value,
+      village: (this.currentUser && this.currentUser.role === 'asha_worker') ? this.currentUser.village : document.getElementById('chVillage').value,
       created_by: this.currentUser ? this.currentUser.id : 1,
       created_at: new Date().toISOString(),
       sync_status: this.isOnline ? 'SYNCED' : 'PENDING_SYNC'
@@ -1397,7 +1605,7 @@ const app = {
 
     if (this.isOnline) {
       try {
-        const res = await fetch('/api/children', {
+        const res = await this.apiFetch('/api/children', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(childData)
@@ -1437,7 +1645,7 @@ const app = {
       let list = [];
       if (this.isOnline) {
         try {
-          const res = await fetch('/api/immunizations/follow-up');
+          const res = await this.apiFetch('/api/immunizations/follow-up');
           if (res.ok) {
             const data = await res.json();
             list = data.follow_up_list || [];
@@ -1521,7 +1729,7 @@ const app = {
 
     if (this.isOnline) {
       try {
-        const res = await fetch(`/api/immunizations/${immId}`, {
+        const res = await this.apiFetch(`/api/immunizations/${immId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -1561,7 +1769,7 @@ const app = {
 
     try {
       if (this.isOnline) {
-        const res = await fetch('/api/admin/clean-records', { method: 'POST' });
+        const res = await this.apiFetch('/api/admin/clean-records', { method: 'POST' });
         if (!res.ok) throw new Error("Failed to clean database on server.");
       }
       
@@ -1604,7 +1812,7 @@ const app = {
     e.preventDefault();
     const symData = {
       client_uid: `SYM-LOCAL-${Date.now()}`,
-      village: document.getElementById('symVillage').value,
+      village: (this.currentUser && this.currentUser.role === 'asha_worker') ? this.currentUser.village : document.getElementById('symVillage').value,
       person_name: document.getElementById('symPersonName').value.trim(),
       age: parseInt(document.getElementById('symAge').value) || null,
       gender: document.getElementById('symGender').value,
@@ -1618,7 +1826,7 @@ const app = {
 
     if (this.isOnline) {
       try {
-        const res = await fetch('/api/symptoms', {
+        const res = await this.apiFetch('/api/symptoms', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(symData)
@@ -1647,7 +1855,7 @@ const app = {
       let data = null;
       if (this.isOnline) {
         try {
-          const res = await fetch('/api/outbreak/alerts');
+          const res = await this.apiFetch('/api/outbreak/alerts');
           if (res.ok) {
             data = await res.json();
             this.cachedData.alerts = data;
@@ -1759,7 +1967,7 @@ const app = {
   // 12. Model Status & Admin Retraining
   async loadModelStatus() {
     try {
-      const res = await fetch('/api/model/status');
+      const res = await this.apiFetch('/api/model/status');
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
 
@@ -1824,7 +2032,7 @@ const app = {
   async retrainModel() {
     if (!confirm("Retrain maternal risk classification model on the dataset?")) return;
     try {
-      const res = await fetch('/api/model/retrain', { method: 'POST' });
+      const res = await this.apiFetch('/api/model/retrain', { method: 'POST' });
       const data = await res.json();
       alert(`Model successfully retrained! Macro Recall: ${Math.round(data.metrics.recall_macro * 100)}%, High Risk Recall: ${Math.round(data.metrics.per_class['High Risk'].recall * 100)}%`);
       this.loadModelStatus();
@@ -1836,7 +2044,7 @@ const app = {
   // 13. Reports & Child Immunization Analytics (from XLS)
   async loadCoverageReports() {
     try {
-      const res = await fetch('/api/analytics/coverage');
+      const res = await this.apiFetch('/api/analytics/coverage');
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
 
@@ -1892,12 +2100,16 @@ const app = {
 
     // Forms
     document.getElementById('loginForm')?.addEventListener('submit', (e) => this.handleLogin(e));
+    document.getElementById('signupForm')?.addEventListener('submit', (e) => this.handleSignup(e));
     document.getElementById('logoutBtn')?.addEventListener('click', () => this.logout());
     document.getElementById('addMotherForm')?.addEventListener('submit', (e) => this.handleAddMother(e));
     document.getElementById('maternalPredictForm')?.addEventListener('submit', (e) => this.handleMaternalPredict(e));
     document.getElementById('addChildForm')?.addEventListener('submit', (e) => this.handleAddChild(e));
     document.getElementById('recordVaccineForm')?.addEventListener('submit', (e) => this.handleRecordVaccine(e));
     document.getElementById('symptomForm')?.addEventListener('submit', (e) => this.handleAddSymptom(e));
+
+    // Interactive Password Visibility Toggles
+    this.setupPasswordToggles();
 
     // Language Selector Event Listener
     const langSelect = document.getElementById('langSelector');

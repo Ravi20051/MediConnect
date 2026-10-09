@@ -9,18 +9,19 @@
  * 4. Enables the user to open/refresh the application shell while disconnected.
  */
 
-const CACHE_NAME = 'mediconnect-shell-v2.1';
+const CACHE_NAME = 'mediconnect-shell-v2.2';
 
 const APP_SHELL_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/static/css/styles.css?v=2.1.0',
-  '/static/js/i18n.js?v=2.1.0',
-  '/static/js/app.js?v=2.1.0',
+  '/static/css/styles.css?v=2.2.0',
+  '/static/js/i18n.js?v=2.2.0',
+  '/static/js/app.js?v=2.2.0',
   '/static/css/styles.css',
   '/static/js/i18n.js',
-  '/static/js/app.js'
+  '/static/js/app.js',
+  '/static/icons/icon.svg'
 ];
 
 // 1. Installation: Pre-cache application shell assets
